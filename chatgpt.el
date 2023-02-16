@@ -144,7 +144,7 @@ function."
       (goto-char (point-max))
       (unless (pos-visible-in-window-p (point-max) win)
         (goto-char (point-max))
-        (recenter))
+        (recenter -1))
       (select-window saved-win))))
 
 (defun chatgpt--clear-line ()
@@ -176,12 +176,12 @@ function."
     (save-excursion
       (goto-char (point-max))
       (insert (format "\n%s\n%s >>> %s\n%s\n%s\n%s"
-                      (make-string (window-width) ?-)
+                      (make-string 66 ?=)
                       (if (= (point-min) (point))
                           ""
                         "\n\n")
                       (propertize query 'face 'bold)
-                      (make-string (window-width) ?-)
+                      (make-string 66 ?=)
                       (propertize
                        (chatgpt--identifier-string id)
                        'invisible t)
