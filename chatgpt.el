@@ -178,8 +178,8 @@ function."
 (defun chatgpt--goto-identifier (id)
   "Go to response of ID."
   (cl-assert (equal (current-buffer) (get-buffer (chatgpt-get-output-buffer-name))))
-  (goto-char (point-min))
-  (re-search-forward (chatgpt--regex-string id))
+  (goto-char (point-max))
+  (re-search-backward (chatgpt--regex-string id))
   (forward-line))
 
 (defun chatgpt--insert-query (query id)
