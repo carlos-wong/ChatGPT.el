@@ -56,11 +56,21 @@
 (defvar chatgpt-process nil
   "The ChatGPT process.")
 
+(defvar chatgpt-buffer-name "*ChatGPT*")
+
 ;;;###autoload
 (defun chatgpt-login ()
   "Log in to ChatGPT."
   (interactive)
   (shell-command "chatgpt install &"))
+
+(defun chatgpt-get-filename-buffer ()
+  (or (and chatgpt-record-path (find-file-noselect (format "%s/gptchat_record_%s.txt" chatgpt-record-path (chatgpt-get-current-date-string))))
+      (get-buffer-create chatgpt-buffer-name)))
+
+(defun chatgpt-get-output-buffer-name ()
+  (or (and chatgpt-record-path (buffer-name (find-file-noselect (format "%s/gptchat_record_%s.txt" chatgpt-record-path (chatgpt-get-current-date-string)))))
+      chatgpt-buffer-name))
 
 ;;;###autoload
 (defun chatgpt-init ()
@@ -83,7 +93,7 @@ function."
   (setq chatgpt-process (epc:start-epc python-interpreter (list (expand-file-name
                                                                  (format "%schatgpt.py"
                                                                          chatgpt-repo-path)))))
-  (with-current-buffer (get-buffer-create "*ChatGPT*")
+  (with-current-buffer (chatgpt-get-filename-buffer)
     (visual-line-mode 1))
   (message "ChatGPT initialized."))
 
@@ -136,10 +146,10 @@ function."
 (defun chatgpt-display ()
   "Displays *ChatGPT*."
   (interactive)
-  (display-buffer "*ChatGPT*")
+  (display-buffer (chatgpt-get-output-buffer-name))
   (when-let ((saved-win (get-buffer-window (current-buffer)))
-             (win (get-buffer-window "*ChatGPT*")))
-    (unless (equal (current-buffer) (get-buffer "*ChatGPT*"))
+             (win (get-buffer-window (chatgpt-get-output-buffer-name))))
+    (unless (equal (current-buffer) (get-buffer (chatgpt-get-output-buffer-name)))
       (select-window win)
       (goto-char (point-max))
       (unless (pos-visible-in-window-p (point-max) win)
@@ -149,7 +159,7 @@ function."
 
 (defun chatgpt--clear-line ()
   "Clear line in *ChatGPT*."
-  (cl-assert (equal (current-buffer) (get-buffer "*ChatGPT*")))
+  (cl-assert (equal (current-buffer) (get-buffer (chatgpt-get-output-buffer-name))))
   (delete-region (save-excursion (beginning-of-line)
                                  (point))
                  (save-excursion (end-of-line)
@@ -165,14 +175,14 @@ function."
 
 (defun chatgpt--goto-identifier (id)
   "Go to response of ID."
-  (cl-assert (equal (current-buffer) (get-buffer "*ChatGPT*")))
+  (cl-assert (equal (current-buffer) (get-buffer (chatgpt-get-output-buffer-name))))
   (goto-char (point-min))
   (re-search-forward (chatgpt--regex-string id))
   (forward-line))
 
 (defun chatgpt--insert-query (query id)
   "Insert QUERY with ID into *ChatGPT*."
-  (with-current-buffer (get-buffer-create "*ChatGPT*")
+  (with-current-buffer (chatgpt-get-filename-buffer)
     (save-excursion
       (goto-char (point-max))
       (insert (format "\n%s\n%s >>> %s\n%s\n%s\n%s"
@@ -191,8 +201,7 @@ function."
 
 (defun chatgpt--insert-response (response id)
   "Insert RESPONSE into *ChatGPT* for ID."
-  (and chatgpt-record-path (chatgpt-append-gptchat-record response))
-  (with-current-buffer (get-buffer-create "*ChatGPT*")
+  (with-current-buffer (chatgpt-get-filename-buffer)
     (save-excursion
       (chatgpt--goto-identifier id)
       (chatgpt--clear-line)
@@ -200,7 +209,7 @@ function."
 
 (defun chatgpt--insert-error (error-msg id)
   "Insert ERROR-MSG into *ChatGPT* for ID."
-  (with-current-buffer (get-buffer-create "*ChatGPT*")
+  (with-current-buffer (chatgpt-get-filename-buffer)
     (save-excursion
       (chatgpt--goto-identifier id)
       (chatgpt--clear-line)
@@ -213,7 +222,7 @@ function."
            (run-with-timer 0.5 0.5
                            (eval
                             `(lambda ()
-                               (with-current-buffer (get-buffer-create "*ChatGPT*")
+                               (with-current-buffer (chatgpt-get-filename-buffer)
                                  (save-excursion
                                    (chatgpt--goto-identifier ,id)
                                    (let ((line (thing-at-point 'line)))
@@ -342,7 +351,6 @@ Supported query types are:
   ;;   (if (region-active-p)
   ;;       (chatgpt-query-by-type query)
   ;;     (chatgpt--query query)))
-  (and chatgpt-record-path (chatgpt-append-gptchat-record (concat "    >>> " query)))
   (if (region-active-p)
       (chatgpt-query-by-type query)
     (chatgpt--query query)))
