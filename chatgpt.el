@@ -72,6 +72,8 @@
   (or (and chatgpt-record-path (buffer-name (find-file-noselect (format "%s/gptchat_record_%s.txt" chatgpt-record-path (chatgpt-get-current-date-string)))))
       chatgpt-buffer-name))
 
+(defvar chatgpt-finish-response-hook nil)
+
 ;;;###autoload
 (defun chatgpt-init ()
   "Initialize the ChatGPT server.
@@ -272,7 +274,8 @@ users."
                  (chatgpt--stop-wait ,saved-id)
                  (chatgpt--insert-response response ,saved-id)
                  (when chatgpt-display-on-response
-                   (chatgpt-display))))))
+                   (chatgpt-display)
+                   (and chatgpt-finish-response-hook (run-hooks 'chatgpt-finish-response-hook)))))))
      (eval
       `(deferred:error it
                        (lambda (err)
