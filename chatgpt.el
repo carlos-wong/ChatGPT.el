@@ -65,11 +65,11 @@
   (shell-command "chatgpt install &"))
 
 (defun chatgpt-get-filename-buffer ()
-  (or (and chatgpt-record-path (find-file-noselect (format "%s/gptchat_record_%s.txt" chatgpt-record-path (chatgpt-get-current-date-string))))
+  (or (and chatgpt-record-path (find-file-noselect (format "%s/chatgpt_record_%s.txt" chatgpt-record-path (chatgpt-get-current-date-string))))
       (get-buffer-create chatgpt-buffer-name)))
 
 (defun chatgpt-get-output-buffer-name ()
-  (or (and chatgpt-record-path (buffer-name (find-file-noselect (format "%s/gptchat_record_%s.txt" chatgpt-record-path (chatgpt-get-current-date-string)))))
+  (or (and chatgpt-record-path (buffer-name (find-file-noselect (format "%s/chatgpt_record_%s.txt" chatgpt-record-path (chatgpt-get-current-date-string)))))
       chatgpt-buffer-name))
 
 (defvar chatgpt-finish-response-hook nil)
@@ -96,7 +96,8 @@ function."
                                                                  (format "%schatgpt.py"
                                                                          chatgpt-repo-path)))))
   (with-current-buffer (chatgpt-get-filename-buffer)
-    (visual-line-mode 1))
+    (visual-line-mode 1)
+    (rename-buffer "- ChatGPT -"))
   (message "ChatGPT initialized."))
 
 (defvar chatgpt-wait-timers (make-hash-table)
@@ -104,7 +105,7 @@ function."
 
 (defun chatgpt-get-current-date-string ()
   "Return the current date string in the format year_month_weekofyear_day."
-  (let* ((now (current-time))
+  (let* ((now (time-subtract (current-time ) (seconds-to-time (* 3 60 60))))
          (year (format-time-string "%Y" now))
          (week (format-time-string "%U" now)))
     (concat year "_week" week)))
@@ -125,7 +126,7 @@ function."
 
 
 (defun chatgpt-append-gptchat-record (recordstr &optional record_path)
-  (and chatgpt-record-path (chatgpt-write-string-to-file (format "%s/gptchat_record_%s.txt" (or record_path chatgpt-record-path ) (chatgpt-get-current-date-string)) (concat "\n\n" (make-string 80 ?-) "\n\n"  recordstr))))
+  (and chatgpt-record-path (chatgpt-write-string-to-file (format "%s/chatgpt_record_%s.txt" (or record_path chatgpt-record-path ) (chatgpt-get-current-date-string)) (concat "\n\n" (make-string 80 ?-) "\n\n"  recordstr))))
 
 ;;;###autoload
 (defun chatgpt-stop ()
@@ -187,6 +188,7 @@ function."
   (with-current-buffer (chatgpt-get-filename-buffer)
     (save-excursion
       (goto-char (point-max))
+      (rename-buffer "- ChatGPT -")
       (insert (format "\n%s\n%s >>> %s\n%s\n%s\n%s"
                       (make-string 66 ?=)
                       (if (= (point-min) (point))
