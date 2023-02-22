@@ -199,7 +199,8 @@ function."
     (save-excursion
       (goto-char (point-max))
       (auto-highlight-symbol-mode -1)
-      (insert (format "\n%s\n%s >>> %s\n%s\n%s\n%s"
+      (with-silent-modifications
+        (insert (format "\n%s\n%s >>> %s\n%s\n%s\n%s"
                       (make-string 66 ?=)
                       (if (= (point-min) (point))
                           ""
@@ -211,7 +212,7 @@ function."
                        'invisible t)
                       (if chatgpt-enable-loading-ellipsis
                           ""
-                        (concat "Waiting for ChatGPT...")))))))
+                        (concat "Waiting for ChatGPT..."))))))))
 
 (defun chatgpt--insert-response (response id)
   "Insert RESPONSE into *ChatGPT* for ID."

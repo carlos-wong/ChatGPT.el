@@ -2,7 +2,6 @@
 (defun chatgpt--query-stream (query &optional recursive)
   (unless chatgpt-process
     (chatgpt-init))
-  (chatgpt-display)
   (let ((next-query query)
         (saved-id (if recursive
                       chatgpt-id
@@ -10,7 +9,9 @@
         (next-recursive recursive))
 
     (if (not recursive)
-        (chatgpt--insert-query query saved-id))
+        (progn
+          (chatgpt--insert-query query saved-id)
+          (chatgpt-display)))
 
     (deferred:$
      (deferred:$
@@ -26,12 +27,15 @@
                                   (chatgpt--clear-line)))
                               (if (and (stringp response))
                                   (progn
-                                    (insert response)
+                                    (with-silent-modifications
+                                      (insert response))
                                     (chatgpt--query-stream next-query (point)))
                                 (progn
-                                  (insert (format "\n\n%s END %s"
-                                                      (make-string 30 ?=)
-                                                      (make-string 30 ?=))))))))))
+                                  (with-silent-modifications
+                                    (insert (format "\n\n%s END %s"
+                                                    (make-string 30 ?=)
+                                                    (make-string 30 ?=))))
+                                  (and chatgpt-finish-response-hook (run-hooks 'chatgpt-finish-response-hook)))))))))
      (deferred:error it
                      `(lambda (err)
                         (message "err is:%s" err))))))
