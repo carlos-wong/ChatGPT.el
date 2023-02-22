@@ -96,8 +96,7 @@ function."
                                                                  (format "%schatgpt.py"
                                                                          chatgpt-repo-path)))))
   (with-current-buffer (chatgpt-get-filename-buffer)
-    (visual-line-mode 1)
-    (rename-buffer "- ChatGPT -"))
+    (visual-line-mode 1))
   (message "ChatGPT initialized."))
 
 (defvar chatgpt-wait-timers (make-hash-table)
@@ -149,16 +148,27 @@ function."
 (defun chatgpt-display ()
   "Displays *ChatGPT*."
   (interactive)
-  (display-buffer (chatgpt-get-output-buffer-name))
-  (when-let ((saved-win (get-buffer-window (current-buffer)))
-             (win (get-buffer-window (chatgpt-get-output-buffer-name))))
-    (unless (equal (current-buffer) (get-buffer (chatgpt-get-output-buffer-name)))
-      (select-window win)
-      (goto-char (point-max))
-      (unless (pos-visible-in-window-p (point-max) win)
+  (let ((output-buffer-name "*ChatGPT*"))
+    (if (get-buffer output-buffer-name)
+        (switch-to-buffer output-buffer-name)
+      (progn
+        (switch-to-buffer (chatgpt-get-output-buffer-name))
+        (let ((new-buffer (clone-indirect-buffer output-buffer-name (chatgpt-get-filename-buffer))))
+          (switch-to-buffer new-buffer))))
+    (with-current-buffer (get-buffer output-buffer-name)
+      (setq-local buffer-read-only t))
+
+    (display-buffer output-buffer-name)
+    (end-of-buffer)
+    (when-let ((saved-win (get-buffer-window (current-buffer)))
+               (win (get-buffer-window (chatgpt-get-output-buffer-name))))
+      (unless (equal (current-buffer) (get-buffer (chatgpt-get-output-buffer-name)))
+        (select-window win)
         (goto-char (point-max))
-        (recenter -1))
-      (select-window saved-win))))
+        (unless (pos-visible-in-window-p (point-max) win)
+          (goto-char (point-max))
+          (recenter -1))
+        (select-window saved-win)))))
 
 (defun chatgpt--clear-line ()
   "Clear line in *ChatGPT*."
@@ -188,7 +198,7 @@ function."
   (with-current-buffer (chatgpt-get-filename-buffer)
     (save-excursion
       (goto-char (point-max))
-      (rename-buffer "- ChatGPT -")
+      (auto-highlight-symbol-mode -1)
       (insert (format "\n%s\n%s >>> %s\n%s\n%s\n%s"
                       (make-string 66 ?=)
                       (if (= (point-min) (point))
@@ -360,5 +370,6 @@ Supported query types are:
       (chatgpt-query-by-type query)
     (chatgpt--query query)))
 
+(require 'chatgpt_stream)
 (provide 'chatgpt)
 ;;; chatgpt.el ends here
