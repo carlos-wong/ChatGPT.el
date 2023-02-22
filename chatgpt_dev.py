@@ -1,36 +1,29 @@
 # chatgpt.py
+import sys
+# import imp
+import importlib.util
 
-from epc.server import EPCServer
-from chatgpt_wrapper import ChatGPT
+sys.path.append('/Users/carlos/Downloads/chatgpt-wrapper/chatgpt_wrapper')
 
-server = EPCServer(('localhost', 0))
+# from chatgpt import ChatGPT
 
-bot = None
-stringbot = None
+# ChatGPT = imp.load_source('ChatGPT', '/Users/carlos/Downloads/chatgpt-wrapper/chatgpt_wrapper/chatgpt.py')
 
-@server.register_function
-def query(query):
-    global bot
+spec = importlib.util.spec_from_file_location('ChatGPT', '/Users/carlos/Downloads/chatgpt-wrapper/chatgpt_wrapper/chatgpt.py')
+chatgpt_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(chatgpt_module)
+
+print("chatgpt module is:{0}".format(chatgpt_module.ChatGPT))
+
+ChatGPT = chatgpt_module.ChatGPT
+
+if __name__ == "__main__":
+    bot = None
     if bot == None:
         bot = ChatGPT()
-    return bot.ask(query)
 
-@server.register_function
-def querystream(query):
-    global bot
-    if bot == None:
-        bot = ChatGPT()
+    print("chatgpt bot is:{0}".format(bot))
 
-    global stringbot
-    if stringbot == None:
-        stringbot = iter(bot.ask_stream(query))
+    response = bot.ask("what is sum of 1+2 ")
 
-    try:
-        return next(stringbot)
-    except StopIteration:
-        stringbot = None
-        return None
-
-
-server.print_port()
-server.serve_forever()
+    print("response is: {0}".format(response))
