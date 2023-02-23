@@ -34,8 +34,10 @@
                                   (with-silent-modifications
                                     (insert (format "\n\n%s END %s"
                                                     (make-string 30 ?=)
-                                                    (make-string 30 ?=))))
-                                  (and chatgpt-finish-response-hook (run-hooks 'chatgpt-finish-response-hook)))))))))
+                                                    (make-string 30 ?=))))))))
+                          (if (not (stringp response))
+                              (if (not (string-equal (buffer-name) chatgpt-buffer-name))
+                                        (and chatgpt-finish-response-notify-hook (run-hooks 'chatgpt-finish-response-notify-hook)))))))
      (deferred:error it
                      `(lambda (err)
                         (message "err is:%s" err))))))
