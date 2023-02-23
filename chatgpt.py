@@ -31,6 +31,14 @@ def querystream(query):
         stringbot = None
         return None
 
+@server.register_function
+def switch_to_chat(chat_uuid):
+    global bot
+    if bot == None:
+        bot = ChatGPT()
+
+    print("bot is:",bot)
+    return bot.switch_to_conversation(chat_uuid)
 
 server.print_port()
 server.serve_forever()

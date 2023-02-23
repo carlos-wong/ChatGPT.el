@@ -97,10 +97,28 @@ function."
                                                                          chatgpt-repo-path)))))
   (with-current-buffer (chatgpt-get-filename-buffer)
     (visual-line-mode 1))
-  (message "ChatGPT initialized."))
+  (message "ChatGPT initialized.")
+  (if chatgpt-exist-chats
+      (chatgpt-select-exist-chat (lambda (select-chat)
+                                   (message "select-chat is:%s" select-chat)
+                                   (deferred:$
+                                    (epc:call-deferred chatgpt-process 'switch_to_chat (list select-chat))
+                                    (eval `(deferred:nextc it
+                                                           (lambda (response)))))))))
 
 (defvar chatgpt-wait-timers (make-hash-table)
   "Timers to update the waiting message in the ChatGPT buffer.")
+
+(defvar chatgpt-exist-chats nil)
+
+(defun chatgpt-select-exist-chat (callback)
+  "choose an exist chat."
+  (let ((options chatgpt-exist-chats))
+    (ivy-read "Select a exist chat: " options
+              :action (lambda (x)
+                        (let ((chosen-option (cdr x)))
+                          (funcall callback chosen-option)))
+              :caller 'chatgpt-select-exist-chat)))
 
 (defun chatgpt-get-current-date-string ()
   "Return the current date string in the format year_month_weekofyear_day."
