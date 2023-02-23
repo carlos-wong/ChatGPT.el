@@ -34,7 +34,9 @@
                                   (with-silent-modifications
                                     (insert (format "\n\n%s END %s"
                                                     (make-string 30 ?=)
-                                                    (make-string 30 ?=))))))))
+                                                    (make-string 30 ?=))))
+                                  (if (buffer-file-name)
+                                      (save-buffer))))))
                           (if (not (stringp response))
                               (if (not (string-equal (buffer-name) chatgpt-buffer-name))
                                         (and chatgpt-finish-response-notify-hook (run-hooks 'chatgpt-finish-response-notify-hook)))))))
