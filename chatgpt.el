@@ -58,18 +58,29 @@
 
 (defvar chatgpt-buffer-name "*ChatGPT*")
 
+(defcustom chatgpt-record-path nil
+  "The path of ChatGPT.el conversation path "
+  :type 'string
+  :group 'chatgpt)
+
 ;;;###autoload
 (defun chatgpt-login ()
   "Log in to ChatGPT."
   (interactive)
   (shell-command "chatgpt install &"))
 
+(defun chatgpt-converstaion-log-path ()
+  (let* ((monthly-folder-name (format "%s/%s" chatgpt-record-path  (format-time-string "%Y-%m" (time-subtract (current-time) (seconds-to-time (* 3 60 60)))))))
+    (unless (file-directory-p monthly-folder-name)
+      (make-directory monthly-folder-name t))
+    (format "%s/chatgpt_record_%s.txt" monthly-folder-name (chatgpt-get-current-date-string))))
+
 (defun chatgpt-get-filename-buffer ()
-  (or (and chatgpt-record-path (find-file-noselect (format "%s/chatgpt_record_%s.txt" chatgpt-record-path (chatgpt-get-current-date-string))))
+  (or (and chatgpt-record-path (find-file-noselect (chatgpt-converstaion-log-path)))
       (get-buffer-create chatgpt-buffer-name)))
 
 (defun chatgpt-get-output-buffer-name ()
-  (or (and chatgpt-record-path (buffer-name (find-file-noselect (format "%s/chatgpt_record_%s.txt" chatgpt-record-path (chatgpt-get-current-date-string)))))
+  (or (and chatgpt-record-path (buffer-name (find-file-noselect (chatgpt-converstaion-log-path))))
       chatgpt-buffer-name))
 
 (defvar chatgpt-finish-response-notify-hook nil)
@@ -95,8 +106,8 @@ function."
   (setq chatgpt-process (epc:start-epc python-interpreter (list (expand-file-name
                                                                  (format "%schatgpt.py"
                                                                          chatgpt-repo-path)))))
-  (with-current-buffer (chatgpt-get-filename-buffer)
-    (visual-line-mode 1))
+  ;; (with-current-buffer (chatgpt-get-filename-buffer)
+  ;;   (visual-line-mode 1))
   (message "ChatGPT initialized.")
   (if chatgpt-exist-chats
       (chatgpt-select-exist-chat (lambda (select-chat)
@@ -122,10 +133,7 @@ function."
 
 (defun chatgpt-get-current-date-string ()
   "Return the current date string in the format year_month_weekofyear_day."
-  (let* ((now (time-subtract (current-time ) (seconds-to-time (* 3 60 60))))
-         (year (format-time-string "%Y" now))
-         (week (format-time-string "%U" now)))
-    (concat year "_week" week)))
+  (format-time-string "%Y-%m-%d" (time-subtract (current-time) (seconds-to-time (* 3 60 60)))))
 
 (defun chatgpt-write-string-to-file (filename string)
   "Write STRING to FILENAME, creating the file if it doesn't exist, and appending to it if it does."
@@ -135,15 +143,6 @@ function."
       (append-to-file (point-min) (point-max) filename))
     (unless (file-exists-p filename)
       (write-region (point-min) (point-max) filename))))
-
-(defcustom chatgpt-record-path nil
-  "The path of ChatGPT.el repository."
-  :type 'string
-  :group 'chatgpt)
-
-
-(defun chatgpt-append-gptchat-record (recordstr &optional record_path)
-  (and chatgpt-record-path (chatgpt-write-string-to-file (format "%s/chatgpt_record_%s.txt" (or record_path chatgpt-record-path ) (chatgpt-get-current-date-string)) (concat "\n\n" (make-string 80 ?-) "\n\n"  recordstr))))
 
 ;;;###autoload
 (defun chatgpt-stop ()
@@ -166,13 +165,22 @@ function."
 (defun chatgpt-display ()
   "Displays *ChatGPT*."
   (interactive)
+
   (let ((output-buffer-name chatgpt-buffer-name))
     (if (get-buffer output-buffer-name)
-        (switch-to-buffer output-buffer-name)
+        (progn
+          (if (not (equal (buffer-file-name (buffer-base-buffer (get-buffer output-buffer-name))) (chatgpt-converstaion-log-path)))
+              (progn
+                (message "Chatgpt conversation log path is updated, create clone-indirect-buffer")
+                (kill-buffer (get-buffer output-buffer-name))
+                (let ((new-buffer (clone-indirect-buffer output-buffer-name (chatgpt-get-filename-buffer))))
+                  (switch-to-buffer new-buffer))))
+          (switch-to-buffer output-buffer-name))
       (progn
         (switch-to-buffer (chatgpt-get-output-buffer-name))
         (let ((new-buffer (clone-indirect-buffer output-buffer-name (chatgpt-get-filename-buffer))))
           (switch-to-buffer new-buffer))))
+
     (with-current-buffer (get-buffer output-buffer-name)
       (setq-local buffer-read-only t))
 
@@ -255,7 +263,7 @@ function."
            (run-with-timer 0.5 0.5
                            (eval
                             `(lambda ()
-                               (with-current-buffer (chatgpt-get-filename-buffer)
+                               (with-current-buffer (get-buffer chatgpt-buffer-name)
                                  (save-excursion
                                    (chatgpt--goto-identifier ,id)
                                    (let ((line (thing-at-point 'line)))
