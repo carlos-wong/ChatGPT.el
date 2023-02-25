@@ -8,19 +8,21 @@ server = EPCServer(('localhost', 0))
 bot = None
 stringbot = None
 
-@server.register_function
-def query(query):
+def get_cahtgpt_bot():
     global bot
     if bot == None:
         bot = ChatGPT()
+
+@server.register_function
+def query(query):
+    global bot
+    get_cahtgpt_bot()
     return bot.ask(query)
 
 @server.register_function
 def querystream(query):
     global bot
-    if bot == None:
-        bot = ChatGPT()
-
+    get_cahtgpt_bot()
     global stringbot
     if stringbot == None:
         stringbot = iter(bot.ask_stream(query))
@@ -34,11 +36,11 @@ def querystream(query):
 @server.register_function
 def switch_to_chat(chat_uuid):
     global bot
-    if bot == None:
-        bot = ChatGPT()
+    get_cahtgpt_bot()
+    bot.switch_to_conversation(chat_uuid)
+    return ""
 
-    print("bot is:",bot)
-    return bot.switch_to_conversation(chat_uuid)
+# print("EPC chatgpt Server start")
 
 server.print_port()
 server.serve_forever()
