@@ -161,6 +161,12 @@ function."
   (chatgpt-stop)
   (chatgpt-init))
 
+(defun chatgpt-files-same-p (file1 file2)
+  "Return non-nil if FILE1 and FILE2 point to the same file."
+  (string= (file-truename file1)
+           (file-truename file2)))
+
+
 ;;;###autoload
 (defun chatgpt-display ()
   "Displays *ChatGPT*."
@@ -169,17 +175,17 @@ function."
   (let ((output-buffer-name chatgpt-buffer-name))
     (if (get-buffer output-buffer-name)
         (progn
-          (if (not (equal (buffer-file-name (buffer-base-buffer (get-buffer output-buffer-name))) (chatgpt-converstaion-log-path)))
+          (if (not (chatgpt-files-same-p (buffer-file-name (buffer-base-buffer (get-buffer output-buffer-name))) (chatgpt-converstaion-log-path)))
               (progn
-                (message "Chatgpt conversation log path is updated, create clone-indirect-buffer")
                 (kill-buffer (get-buffer output-buffer-name))
-                (let ((new-buffer (clone-indirect-buffer output-buffer-name (chatgpt-get-filename-buffer))))
-                  (switch-to-buffer new-buffer))))
-          (switch-to-buffer output-buffer-name))
+                (with-current-buffer (chatgpt-get-filename-buffer)
+                  (let ((new-buffer (clone-indirect-buffer output-buffer-name nil)))
+                    (switch-to-buffer new-buffer))))
+            (switch-to-buffer (chatgpt-get-filename-buffer))))
       (progn
-        (switch-to-buffer (chatgpt-get-output-buffer-name))
-        (let ((new-buffer (clone-indirect-buffer output-buffer-name (chatgpt-get-filename-buffer))))
-          (switch-to-buffer new-buffer))))
+        (with-current-buffer (chatgpt-get-filename-buffer)
+          (let ((new-buffer (clone-indirect-buffer output-buffer-name nil)))
+            (switch-to-buffer new-buffer)))))
 
     (with-current-buffer (get-buffer output-buffer-name)
       (setq-local buffer-read-only t))
