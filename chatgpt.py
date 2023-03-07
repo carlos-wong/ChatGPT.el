@@ -1,4 +1,7 @@
 # chatgpt.py
+import sys
+
+sys.path.insert(0, '/Users/carlos/Downloads/chatgpt-wrapper')
 
 from epc.server import EPCServer
 from chatgpt_wrapper import ChatGPT
@@ -37,10 +40,8 @@ def querystream(query):
 def switch_to_chat(chat_uuid):
     global bot
     get_cahtgpt_bot()
-    bot.switch_to_conversation(chat_uuid)
+    # bot.switch_to_conversation(chat_uuid)
     return ""
-
-# print("EPC chatgpt Server start")
 
 server.print_port()
 server.serve_forever()

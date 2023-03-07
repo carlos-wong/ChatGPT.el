@@ -35,17 +35,19 @@ global conversation_info
 
 # conversation_info =  bot.get_conversation_info("e6db6053-ae64-410f-b979-02fc24b8ad55")
 
-bot.switch_to_conversation("e6db6053-ae64-410f-b979-02fc24b8ad55")
+print("try to swtich conversation")
+
+# bot.switch_to_conversation("e6db6053-ae64-410f-b979-02fc24b8ad55")
 
 # print("response is: {0}".format(response))
 # response = bot.ask("not it is 4 ")
 
 # print("response is: {0}".format(response))
 
-current_time = datetime.datetime.now();formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+current_time = datetime.datetime.now(); formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+print("after switch conversation, try to ask")
+# response = bot.ask("what is my name and now is:{0}".format(formatted_time))
+# print("response is: {0}".format(response))
 
-response = bot.ask("sorry it is 3 and now is:{0}".format(formatted_time))
-
-print("response is: {0}".format(response))
 # input_result = input("Press Enter to continue...")
 import code; code.interact(local=locals())
