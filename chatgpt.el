@@ -166,6 +166,18 @@ function."
   (string= (file-truename file1)
            (file-truename file2)))
 
+(defun chatgpt-recenter-buffer (buffer-name)
+  "The function first attempts to obtain the buffer object associated with the given buffer name. If the buffer exists, the function switches to the buffer and moves the cursor to the end of the buffer using goto-char (point-max). The function then searches backwards in the buffer for two strings of equal signs, each of length 66. This is done to locate a marker in the buffer that indicates the start of the content that the user wants to see. Finally, the function re-centers the buffer so that the content starts at the top of the window."
+  (let ((my-buffer (get-buffer buffer-name)))
+    (when my-buffer
+      (switch-to-buffer my-buffer)
+      (goto-char (point-max))
+      (search-backward (make-string 66 ?=))
+      (search-backward (make-string 66 ?=))
+      (let* ((window-height (window-height))
+             (one-third-height (/ window-height 3)))
+        (recenter one-third-height))
+      (beginning-of-line))))
 
 ;;;###autoload
 (defun chatgpt-display ()
@@ -190,8 +202,9 @@ function."
     (with-current-buffer (get-buffer output-buffer-name)
       (setq-local buffer-read-only t))
 
-    (display-buffer output-buffer-name)
-    (end-of-buffer)
+    (chatgpt-recenter-buffer output-buffer-name)
+    ;; (goto-char (point-max))
+    ;; (recenter-top-bottom 1)
     (when-let ((saved-win (get-buffer-window (current-buffer)))
                (win (get-buffer-window (chatgpt-get-output-buffer-name))))
       (unless (equal (current-buffer) (get-buffer (chatgpt-get-output-buffer-name)))
@@ -200,7 +213,8 @@ function."
         (unless (pos-visible-in-window-p (point-max) win)
           (goto-char (point-max))
           (recenter -1))
-        (select-window saved-win)))))
+        (select-window saved-win)))
+    ))
 
 (defun chatgpt--clear-line ()
   "Clear line in *ChatGPT*."
@@ -236,7 +250,7 @@ function."
                       (make-string 66 ?=)
                       (if (= (point-min) (point))
                           ""
-                        "\n\n")
+                        "\n")
                       (propertize query 'face 'bold)
                       (make-string 66 ?=)
                       (propertize
@@ -244,7 +258,8 @@ function."
                        'invisible t)
                       (if chatgpt-enable-loading-ellipsis
                           ""
-                        (concat "Waiting for ChatGPT..."))))))))
+                        (concat "Waiting for ChatGPT..."))))))
+    (end-of-buffer)))
 
 (defun chatgpt--insert-response (response id)
   "Insert RESPONSE into *ChatGPT* for ID."
